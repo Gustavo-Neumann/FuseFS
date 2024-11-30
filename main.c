@@ -16,8 +16,14 @@ int main(int argc, char* argv[]) {
         printf("Argumento %d: %s\n", i, argv[i]);
     }
 
-    char* fuse_argv[argc];
-    memcpy(fuse_argv, argv, sizeof(char*) * argc);
+    // Reorganizar os argumentos para o FUSE
+    char* fuse_argv[argc + 1];
+    fuse_argv[0] = argv[0];             // Executável
+    fuse_argv[1] = argv[2];             // Ponto de montagem
+    fuse_argv[2] = "-o";                // Opções do FUSE
+    fuse_argv[3] = "default_permissions,allow_other"; // Opções FUSE
+    fuse_argv[4] = NULL;                // Finaliza com NULL
 
-    return fuse_main(argc - 1, fuse_argv + 1, &fs_oper, NULL);
+    // Inicia o FUSE
+    return fuse_main(4, fuse_argv, &fs_oper, NULL);
 }
