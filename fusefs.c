@@ -51,21 +51,15 @@ static int fs_readdir(const char* path, void* buf, fuse_fill_dir_t filler,
 static int fs_read(const char* path, char* buf, size_t size, off_t offset,
                    struct fuse_file_info* fi) {
     (void) fi;
-    printf("fs_read: %s\n", path);
+    printf("fs_read: Caminho = %s, Tamanho = %zu, Offset = %ld\n", path, size, offset);
 
     if (strcmp(path, "/file") != 0) {
-        return -ENOENT;
+        return -ENOENT; 
     }
+    printf("fs_read: Recuperando dados do BMP...\n");
+    retrieve_data(fs_state.bmp, buf, size, offset);
 
-    if (offset >= file_size) {
-        return 0;
-    }
-
-    if (offset + size > file_size) {
-        size = file_size - offset;
-    }
-
-    memcpy(buf, file_content + offset, size);
+    printf("fs_read: Dados lidos com sucesso: %.*s\n", (int)size, buf);
     return size;
 }
 
@@ -75,18 +69,19 @@ static int fs_write(const char* path, const char* buf, size_t size, off_t offset
     printf("fs_write: Caminho = %s, Tamanho = %zu, Offset = %ld\n", path, size, offset);
 
     if (strcmp(path, "/file") != 0) {
-        return -ENOENT;
+        return -ENOENT; 
     }
 
-    if (offset + size > sizeof(file_content)) {
-        return -EFBIG;
+    size_t total_size = offset + size;
+
+    if (total_size * 8 > RESERVED_PIXELS * 3) {
+        return -ENOSPC;
     }
 
-    memcpy(file_content + offset, buf, size);
-    file_size = offset + size > file_size ? offset + size : file_size;
+    printf("fs_write: Escondendo dados no BMP...\n");
+    hide_data(fs_state.bmp, buf, size, offset);
 
-    printf("fs_write: Dados escritos: %.*s\n", (int)size, buf);
-
+    printf("fs_write: Dados escritos com sucesso.\n");
     return size;
 }
 
@@ -127,9 +122,11 @@ static void fs_destroy(void* private_data) {
     printf("fs_destroy\n");
 
     if (fs_state.bmp) {
+        fflush(fs_state.bmp);
         fclose(fs_state.bmp);
     }
 }
+
 
 struct fuse_operations fs_oper = {
     .getattr = fs_getattr,

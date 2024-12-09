@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <stdio.h> // Adicionando aqui para reconhecer FILE
 
+#define RESERVED_PIXELS 1024
+
 // Estruturas e funções
 #pragma pack(push, 1)
 typedef struct {
